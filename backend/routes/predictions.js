@@ -1,22 +1,16 @@
-  const express = require('express');
-  const router = express.Router();
-  const axios = require('axios');
-  const GeneratedImage = require('../models/GeneratedImage');
+const express = require('express');
+const router = express.Router();
+const axios = require('axios');
+const GeneratedImage = require('../models/GeneratedImage');
 
-  // POST /api/predictions
+// POST /api/predictions
 router.post('/', async (req, res) => {
   const { prompt, seed, width, height, num_outputs } = req.body;
 
   try {
     const response = await axios.post("https://api.replicate.com/v1/predictions", {
       version: "2c8e954decbf70b7607a4414e5785ef9e4de4b8c51d50fb8b8b349160e0ef6bb",
-      input: { 
-        prompt, 
-        seed, 
-        width, 
-        height, 
-        num_outputs 
-      },
+      input: { prompt, seed, width, height, num_outputs },
     }, {
       headers: {
         'Authorization': `Token ${process.env.REPLICATE_API_TOKEN}`,
@@ -24,10 +18,15 @@ router.post('/', async (req, res) => {
       }
     });
 
-    console.log("Replicate API Response:", response.data);
-    res.status(200).json(response.data);
+    console.log("Replicate API Response:", response.data); // Log response for debugging
+
+    // Ensure output is always an array
+    const output = Array.isArray(response.data.output) ? response.data.output : [response.data.output];
+    
+    res.status(200).json({ ...response.data, output });
   } catch (error) {
-    console.error("Error:", error.response ? error.response.data : error.message);
+    console.error("Error:", error.response ? error.response.data : error.message); // Log error for debugging
+
     if (error.response) {
       res.status(error.response.status).json(error.response.data);
     } else {
@@ -48,9 +47,12 @@ router.get('/:id', async (req, res) => {
       }
     });
 
+    console.log("Prediction Status Response:", response.data); // Log status response for debugging
+
     res.status(response.status).json(response.data);
   } catch (error) {
-    console.error("Error fetching prediction:", error.response ? error.response.data : error.message);
+    console.error("Error:", error.response ? error.response.data : error.message); // Log error for debugging
+
     if (error.response) {
       res.status(error.response.status).json(error.response.data);
     } else {
@@ -63,10 +65,6 @@ router.get('/:id', async (req, res) => {
 router.post('/save-images', async (req, res) => {
   const { prompt, seed, width, height, imageUrls } = req.body;
 
-  if (!prompt || !seed || !width || !height || !imageUrls) {
-    return res.status(400).json({ detail: 'Missing required parameters' });
-  }
-
   try {
     for (const url of imageUrls) {
       await GeneratedImage.create({
@@ -74,7 +72,7 @@ router.post('/save-images', async (req, res) => {
         seed,
         width,
         height,
-        imageUrl: url
+        imageUrl: url // Change this to `imageUrl`
       });
     }
     res.status(200).json({ message: 'Images saved successfully.' });

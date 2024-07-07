@@ -1,41 +1,29 @@
 const mongoose = require('mongoose');
 
+// Define the User schema
 const userSchema = new mongoose.Schema({
-  id: {
-    type: mongoose.Schema.Types.ObjectId,
-    auto: true,
-  },
   clerkUserId: {
     type: String,
     required: true,
-    unique: true, // Ensure uniqueness of Clerk user ID
+    unique: true, // Ensure each user has a unique Clerk ID
   },
-  userId: {
+  email: {
     type: String,
     required: true,
+    unique: true, // Ensure each user has a unique email address
   },
-  stripeCustomerId: {
-    type: String,
+  subscribed: {
+    type: Boolean,
+    default: false, // Initialize subscription status as false
   },
-  package: {
-    type: String,
+  // Add any additional fields you need for your user model
+  createdAt: {
+    type: Date,
+    default: Date.now,
   },
-  status: {
-    type: String,
-    default: 'Inactive',
-  },
-}, {
-  // Add timestamps for automatic creation and update tracking
-  timestamps: true,
 });
 
-// Error handling middleware (example)
-userSchema.post('save', function(error, doc, next) {
-  if (error.name === 'MongoError' && error.code === 11000) {
-    next(new Error('Clerk User ID already exists'));
-  } else {
-    next(error);
-  }
-});
+// Create a model based on the schema
+const User = mongoose.model('User', userSchema);
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = User;

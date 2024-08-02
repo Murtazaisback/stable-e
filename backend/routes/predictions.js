@@ -3,9 +3,10 @@ const router = express.Router();
 const axios = require('axios');
 const GeneratedImage = require('../models/GeneratedImage');
 
-// POST /api/predictions
 router.post('/', async (req, res) => {
   const { prompt, seed, width, height, num_outputs } = req.body;
+
+  console.log('Replicate API Token:', process.env.REPLICATE_API_TOKEN); // Add logging
 
   try {
     const response = await axios.post("https://api.replicate.com/v1/predictions", {
@@ -18,14 +19,13 @@ router.post('/', async (req, res) => {
       }
     });
 
-    console.log("Replicate API Response:", response.data); // Log response for debugging
+    console.log("Replicate API Response:", response.data);
 
-    // Ensure output is always an array
     const output = Array.isArray(response.data.output) ? response.data.output : [response.data.output];
     
     res.status(200).json({ ...response.data, output });
   } catch (error) {
-    console.error("Error:", error.response ? error.response.data : error.message); // Log error for debugging
+    console.error("Error:", error.response ? error.response.data : error.message);
 
     if (error.response) {
       res.status(error.response.status).json(error.response.data);
@@ -35,7 +35,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-// GET /api/predictions/:id
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
 
@@ -47,11 +46,11 @@ router.get('/:id', async (req, res) => {
       }
     });
 
-    console.log("Prediction Status Response:", response.data); // Log status response for debugging
+    console.log("Prediction Status Response:", response.data);
 
     res.status(response.status).json(response.data);
   } catch (error) {
-    console.error("Error:", error.response ? error.response.data : error.message); // Log error for debugging
+    console.error("Error:", error.response ? error.response.data : error.message);
 
     if (error.response) {
       res.status(error.response.status).json(error.response.data);
@@ -61,7 +60,6 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// POST /api/predictions/save-images
 router.post('/save-images', async (req, res) => {
   const { prompt, seed, width, height, imageUrls } = req.body;
 
@@ -72,7 +70,7 @@ router.post('/save-images', async (req, res) => {
         seed,
         width,
         height,
-        imageUrl: url // Change this to `imageUrl`
+        imageUrl: url
       });
     }
     res.status(200).json({ message: 'Images saved successfully.' });
@@ -82,7 +80,6 @@ router.post('/save-images', async (req, res) => {
   }
 });
 
-// GET /api/predictions/images
 router.get('/images', async (req, res) => {
   console.log("GET /images route hit");
   try {

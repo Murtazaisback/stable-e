@@ -2,14 +2,10 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const { clerkClient } = require('@clerk/clerk-sdk-node'); // Correct import
+const { clerkClient } = require('@clerk/clerk-sdk-node');
 const stripe = require('stripe')("sk_test_51PYVhBCakG4dId7vbuiX5Fa7Nk2jdLcK6rl80F67AcPVQUAQ4ZesuLC8SfN36C1u3QVll4Dk1QnJXJCqu37UCZff00NAE2Itr4");
 const bodyParser = require('body-parser');
-const User = require('./models/User'); // Adjust path as per your file structure
-
-
-
-
+const User = require('./models/User');
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -32,8 +28,6 @@ db.once('open', () => {
   console.log('Connected to MongoDB');
 });
 
-
-
 // Route to get user subscription status
 app.get('/api/user/:userId', async (req, res) => {
   const { userId } = req.params;
@@ -47,7 +41,7 @@ app.get('/api/user/:userId', async (req, res) => {
 
     res.json({ 
       subscribed: user.subscribed,
-      imageGenerationCount: user.imageGenerationCount || 0 // Ensure you return this
+      imageGenerationCount: user.imageGenerationCount || 0
     });
   } catch (error) {
     console.error('Error fetching user subscription status:', error);
@@ -55,15 +49,10 @@ app.get('/api/user/:userId', async (req, res) => {
   }
 });
 
-
-
 // Routes
 const predictionsRouter = require('./routes/predictions');
 app.use('/api/predictions', predictionsRouter);
 
-
-
-// Stripe Checkout Session Route
 // Stripe Checkout Session Route
 app.post('/create-checkout-session', async (req, res) => {
   const { userId, productId, email } = req.body;
@@ -73,14 +62,14 @@ app.post('/create-checkout-session', async (req, res) => {
       payment_method_types: ['card'],
       line_items: [
         {
-          price: 'price_1PYViGCakG4dId7vDIopCcx4', // Replace with your price ID from Stripe Dashboard
+          price: 'price_1PYViGCakG4dId7vDIopCcx4',
           quantity: 1,
         }
       ],
       mode: 'subscription',
       success_url: `${process.env.CLIENT_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.CLIENT_URL}/cancel`,
-      customer_email: email, // Capture customer email
+      customer_email: email,
       metadata: {
         userId,
       },
@@ -93,7 +82,6 @@ app.post('/create-checkout-session', async (req, res) => {
   }
 });
 
-
 // Webhook handler for Stripe events
 app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, res) => {
   let event;
@@ -105,19 +93,16 @@ app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, r
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // Handle the event
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
 
-    // Retrieve user ID and email from session metadata
     const userId = session.metadata.userId;
     const userEmail = session.customer_email;
 
     try {
-      // Update user subscription status in MongoDB
       const updatedUser = await User.findOneAndUpdate(
         { clerkUserId: userId },
-        { subscribed: true, email: userEmail }, // Set user as subscribed and save email
+        { subscribed: true, email: userEmail },
         { new: true }
       );
 
@@ -134,14 +119,8 @@ app.post('/webhook', bodyParser.raw({ type: 'application/json' }), async (req, r
     }
   }
 
-  // Return a response to acknowledge receipt of the event
   res.json({ received: true });
 });
-
-
-
-
-
 
 app.listen(port, () => {
   console.log(`Server is running on port: ${port}`);
